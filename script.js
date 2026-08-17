@@ -1,5 +1,5 @@
 // script.js — fetch upcoming launches and filter to Florida pads
-const API = 'https://ll.thespacedevs.com/2.3.0/launch/upcoming/?limit=100&ordering=net';
+const API = 'https://ll.thespacedevs.com/2.3.0/launches/upcoming/?limit=100&ordering=net';
 const listEl = document.getElementById('launchList');
 const statsEl = document.getElementById('stats');
 const emptyEl = document.getElementById('empty');
@@ -111,7 +111,7 @@ async function load(){
   try{
     statsEl.textContent = 'Loading upcoming launches…';
     const res = await fetch(API);
-    if(!res.ok) throw new Error(res.statusText || res.status);
+    if(!res.ok) throw new Error(res.status + ' ' + res.statusText);
     const data = await res.json();
     const all = data.results || [];
     launches = filterFlorida(all);
