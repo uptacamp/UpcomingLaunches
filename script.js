@@ -3,6 +3,7 @@ const API = 'https://ll.thespacedevs.com/2.3.0/launches/upcoming/?limit=100&orde
 const listEl = document.getElementById('launchList');
 const statsEl = document.getElementById('stats');
 const emptyEl = document.getElementById('empty');
+const debugEl = document.getElementById('debug');
 const searchInput = document.getElementById('searchInput');
 let launchesAll = [];
 
@@ -27,9 +28,7 @@ function isFloridaLaunch(l){
   const loc = l.pad?.location || {};
   const padName = l.pad?.name || '';
   const combined = `${padName} ${loc.name || ''} ${loc.region || ''} ${loc.state || ''} ${loc.country_code || ''}`.toLowerCase();
-  // common Florida site keywords
-  const floridaKeywords = /(cape canaveral|kennedy|patrick|merritt island|canaveral|cocoa|vandenberg)/i;
-  // Note: vandenberg is NOT in Florida; included here accidentally — remove if needed. We'll rely primarily on Kennedy/Canaveral/Patrick/Merritt.
+  // common Florida site keywords - vandenberg removed to avoid false positives
   return /florida/i.test(combined) || /\bfl\b/i.test(combined) || /(cape canaveral|kennedy|patrick|merritt island|canaveral)/i.test(combined);
 }
 
@@ -41,6 +40,7 @@ function render(list){
     return;
   }
   emptyEl.hidden = true;
+  debugEl.hidden = true;
 
   const total = list.length;
   const floridaCount = list.filter(isFloridaLaunch).length;
@@ -140,10 +140,20 @@ async function load(){
     if(!res.ok) throw new Error(res.status + ' ' + res.statusText);
     const data = await res.json();
     launchesAll = data.results || [];
+    if(!launchesAll.length){
+      // show debug info so we can see what the API returned
+      debugEl.hidden = false;
+      debugEl.textContent = JSON.stringify(data, null, 2);
+      console.warn('Launches array empty — API returned:', data);
+    } else {
+      debugEl.hidden = true;
+    }
     updateView();
   }catch(err){
     statsEl.textContent = 'Failed to load launches';
     emptyEl.hidden = false;
+    debugEl.hidden = false;
+    debugEl.textContent = `Fetch error: ${err.message}`;
     listEl.innerHTML = `<div class="empty">Error: ${err.message}</div>`;
     console.error(err);
   }
