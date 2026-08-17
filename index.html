@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Upcoming Florida Launches</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <h1>Upcoming Florida Launches</h1>
+      <p class="tagline">Live data from Launch Library 2 — filtered to launches from Florida pads.</p>
+    </div>
+  </header>
+
+  <main class="container">
+    <section id="controls" class="controls">
+      <div class="search">
+        <input id="searchInput" placeholder="Filter by rocket, provider, pad, or name" aria-label="Filter launches" />
+      </div>
+      <div id="stats" class="stats">Loading...</div>
+    </section>
+
+    <section id="launchList" class="grid" aria-live="polite"></section>
+
+    <div id="empty" class="empty" hidden>
+      <p>No upcoming Florida launches found.</p>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <small>Data from <a href="https://ll.thespacedevs.com/2.3.0/launch/upcoming/">Launch Library 2</a>. Built by uptacamp.</small>
+    </div>
+  </footer>
+
+  <script src="script.js" defer></script>
+</body>
+</html>
