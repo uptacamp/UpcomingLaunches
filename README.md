@@ -1,6 +1,6 @@
 # UpcomingLaunches
 
-Static webpage that fetches upcoming launches from Launch Library 2 and shows only Florida launches.
+Static webpage that fetches upcoming launches from Launch Library 2 and shows only Florida launches by default.
 
 To view locally:
 

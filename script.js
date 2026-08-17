@@ -4,7 +4,8 @@ const listEl = document.getElementById('launchList');
 const statsEl = document.getElementById('stats');
 const emptyEl = document.getElementById('empty');
 const searchInput = document.getElementById('searchInput');
-let launches = [];
+const filterCheckbox = document.getElementById('filterFlorida');
+let launchesAll = []; // raw API results
 
 function formatNet(net){
   if(!net) return 'TBD';
@@ -26,11 +27,11 @@ function render(list){
   listEl.innerHTML = '';
   if(!list.length){
     emptyEl.hidden = false;
-    statsEl.textContent = '0 Florida launches found';
+    statsEl.textContent = '0 launches found';
     return;
   }
   emptyEl.hidden = true;
-  statsEl.textContent = `${list.length} Florida launch${list.length>1?'es':''} (showing up to ${list.length})`;
+  statsEl.textContent = `${list.length} launch${list.length>1?'es':''} (showing up to ${list.length})`;
 
   for(const l of list){
     const card = document.createElement('article');
@@ -107,15 +108,22 @@ function filterFlorida(all){
   });
 }
 
+function updateView(){
+  const showFlorida = filterCheckbox?.checked ?? true;
+  const base = showFlorida ? filterFlorida(launchesAll) : launchesAll;
+  const q = searchInput.value.trim();
+  const filtered = q ? base.filter(l => matchesSearch(l, q)) : base;
+  render(filtered);
+}
+
 async function load(){
   try{
     statsEl.textContent = 'Loading upcoming launches…';
     const res = await fetch(API);
     if(!res.ok) throw new Error(res.status + ' ' + res.statusText);
     const data = await res.json();
-    const all = data.results || [];
-    launches = filterFlorida(all);
-    render(launches);
+    launchesAll = data.results || [];
+    updateView();
   }catch(err){
     statsEl.textContent = 'Failed to load launches';
     emptyEl.hidden = false;
@@ -125,8 +133,10 @@ async function load(){
 }
 
 searchInput.addEventListener('input', ()=>{
-  const q = searchInput.value.trim();
-  render(launches.filter(l => matchesSearch(l,q)));
+  updateView();
+});
+filterCheckbox?.addEventListener('change', ()=>{
+  updateView();
 });
 
 load();

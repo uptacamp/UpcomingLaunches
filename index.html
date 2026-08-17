@@ -19,7 +19,12 @@
       <div class="search">
         <input id="searchInput" placeholder="Filter by rocket, provider, pad, or name" aria-label="Filter launches" />
       </div>
-      <div id="stats" class="stats">Loading...</div>
+      <div class="stats-controls" style="display:flex;align-items:center;gap:12px;">
+        <label style="color:var(--muted);font-size:0.95rem;display:inline-flex;align-items:center;gap:8px;">
+          <input id="filterFlorida" type="checkbox" checked /> Show only Florida launches
+        </label>
+        <div id="stats" class="stats">Loading...</div>
+      </div>
     </section>
 
     <section id="launchList" class="grid" aria-live="polite"></section>
