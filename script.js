@@ -1,11 +1,10 @@
-// script.js — fetch upcoming launches and filter to Florida pads
+// script.js — fetch upcoming launches and highlight Florida pads (show all by default)
 const API = 'https://ll.thespacedevs.com/2.3.0/launches/upcoming/?limit=100&ordering=net';
 const listEl = document.getElementById('launchList');
 const statsEl = document.getElementById('stats');
 const emptyEl = document.getElementById('empty');
 const searchInput = document.getElementById('searchInput');
-const filterCheckbox = document.getElementById('filterFlorida');
-let launchesAll = []; // raw API results
+let launchesAll = [];
 
 function formatNet(net){
   if(!net) return 'TBD';
@@ -18,9 +17,20 @@ function formatNet(net){
 function statusClass(statusName){
   if(!statusName) return 'badge badge--yellow';
   const s = statusName.toLowerCase();
-  if(s.includes('success') || s.includes('go') || s.includes('success')) return 'badge badge--green';
+  if(s.includes('success') || s.includes('go')) return 'badge badge--green';
   if(s.includes('hold') || s.includes('delay') || s.includes('scrub')) return 'badge badge--red';
   return 'badge badge--yellow';
+}
+
+// Detect Florida pads using multiple heuristics
+function isFloridaLaunch(l){
+  const loc = l.pad?.location || {};
+  const padName = l.pad?.name || '';
+  const combined = `${padName} ${loc.name || ''} ${loc.region || ''} ${loc.state || ''} ${loc.country_code || ''}`.toLowerCase();
+  // common Florida site keywords
+  const floridaKeywords = /(cape canaveral|kennedy|patrick|merritt island|canaveral|cocoa|vandenberg)/i;
+  // Note: vandenberg is NOT in Florida; included here accidentally — remove if needed. We'll rely primarily on Kennedy/Canaveral/Patrick/Merritt.
+  return /florida/i.test(combined) || /\bfl\b/i.test(combined) || /(cape canaveral|kennedy|patrick|merritt island|canaveral)/i.test(combined);
 }
 
 function render(list){
@@ -31,32 +41,38 @@ function render(list){
     return;
   }
   emptyEl.hidden = true;
-  statsEl.textContent = `${list.length} launch${list.length>1?'es':''} (showing up to ${list.length})`;
+
+  const total = list.length;
+  const floridaCount = list.filter(isFloridaLaunch).length;
+  statsEl.textContent = `${total} upcoming launch${total>1?'es':''} — ${floridaCount} Florida`;
 
   for(const l of list){
     const card = document.createElement('article');
     card.className = 'card';
 
+    const headerRow = document.createElement('div');
+    headerRow.className = 'row';
+
     const title = document.createElement('h3');
     title.textContent = l.name || 'Unnamed';
-    card.appendChild(title);
+    headerRow.appendChild(title);
 
-    const row = document.createElement('div');
-    row.className = 'row';
+    // status badge on the right
+    const statusWrap = document.createElement('div');
+    statusWrap.style.marginLeft = 'auto';
+    const sName = l.status?.name || (l.status? String(l.status): 'Unknown');
+    const statusBadge = document.createElement('span');
+    statusBadge.className = statusClass(sName) + ' badge';
+    statusBadge.textContent = sName || 'Unknown';
+    statusWrap.appendChild(statusBadge);
+    headerRow.appendChild(statusWrap);
+
+    card.appendChild(headerRow);
+
     const net = document.createElement('div');
     net.className = 'meta';
     net.innerHTML = `<strong>${formatNet(l.net || l.window_start || l.window_end)}</strong>`;
-    row.appendChild(net);
-
-    const status = document.createElement('div');
-    status.style.marginLeft = 'auto';
-    const sName = l.status?.name || (l.status? String(l.status): 'Unknown');
-    const badge = document.createElement('span');
-    badge.className = statusClass(sName) + ' badge';
-    badge.textContent = sName || 'Unknown';
-    status.appendChild(badge);
-    row.appendChild(status);
-    card.appendChild(row);
+    card.appendChild(net);
 
     const providerEl = document.createElement('div');
     providerEl.className = 'field small';
@@ -75,6 +91,17 @@ function render(list){
     padEl.className = 'field small';
     padEl.innerHTML = `<div class="label">Pad</div><div class="value">${padName}${padLoc?` — ${padLoc}`:''}</div>`;
     card.appendChild(padEl);
+
+    // Florida badge
+    if(isFloridaLaunch(l)){
+      const fl = document.createElement('div');
+      fl.style.marginTop = '8px';
+      const flBadge = document.createElement('span');
+      flBadge.className = 'badge badge--green';
+      flBadge.textContent = 'Florida';
+      fl.appendChild(flBadge);
+      card.appendChild(fl);
+    }
 
     if(l.url){
       const a = document.createElement('a');
@@ -99,19 +126,9 @@ function matchesSearch(item, q){
     .some(s => s.toLowerCase().includes(q));
 }
 
-function filterFlorida(all){
-  return all.filter(l => {
-    const loc = l.pad?.location || {};
-    const padName = l.pad?.name || '';
-    const checks = [loc.name, loc.region, loc.state, padName, loc.country_code];
-    return checks.filter(Boolean).some(v => /florida/i.test(String(v)) || /^FL$/i.test(String(v)));
-  });
-}
-
 function updateView(){
-  const showFlorida = filterCheckbox?.checked ?? true;
-  const base = showFlorida ? filterFlorida(launchesAll) : launchesAll;
   const q = searchInput.value.trim();
+  const base = launchesAll;
   const filtered = q ? base.filter(l => matchesSearch(l, q)) : base;
   render(filtered);
 }
@@ -133,9 +150,6 @@ async function load(){
 }
 
 searchInput.addEventListener('input', ()=>{
-  updateView();
-});
-filterCheckbox?.addEventListener('change', ()=>{
   updateView();
 });
 
