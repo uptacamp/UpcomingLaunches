@@ -3,40 +3,20 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Upcoming Launches</title>
+  <title>Upcoming Launch — Retro Watch</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <header class="site-header">
-    <div class="container">
-      <h1>Upcoming Launches</h1>
-      <p class="tagline">Live data from Launch Library 2 — Florida launches are highlighted.</p>
-    </div>
-  </header>
-
-  <main class="container">
-    <section id="controls" class="controls">
-      <div class="search">
-        <input id="searchInput" placeholder="Filter by rocket, provider, pad, or name" aria-label="Filter launches" />
-      </div>
-      <div id="stats" class="stats">Loading...</div>
-    </section>
-
-    <section id="launchList" class="grid" aria-live="polite"></section>
-
-    <div id="empty" class="empty" hidden>
-      <p>No upcoming launches found.</p>
-    </div>
-
-    <pre id="debug" class="empty" hidden style="text-align:left;overflow:auto;max-height:320px;"></pre>
+  <main id="watch" class="watch">
+    <!-- script will render a single tile into #launchList -->
+    <section id="launchList" class="watch-tile" aria-live="polite"></section>
+    <!-- hidden helpers (kept for the script) -->
+    <div id="stats" hidden></div>
+    <input id="searchInput" style="display:none" />
+    <div id="empty" hidden></div>
+    <pre id="debug" hidden></pre>
   </main>
 
-  <footer class="site-footer">
-    <div class="container">
-      <small>Data from <a href="https://ll.thespacedevs.com/2.3.0/launches/upcoming/?limit=10&ordering=net">Launch Library 2</a>. Built by uptacamp.</small>
-    </div>
-  </footer>
-
-  <script src="script.js?t=20260817T2358" defer></script>
+  <script src="script.js?t=20260818T1202" defer></script>
 </body>
 </html>

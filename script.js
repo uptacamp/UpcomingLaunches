@@ -1,4 +1,4 @@
-// script.js — fetch upcoming launches and show only the next upcoming Florida launch (robust detection)
+// script.js — fetch upcoming launches and show only the next upcoming Florida launch (retro single-tile render)
 const API = 'https://ll.thespacedevs.com/2.3.0/launches/upcoming/?limit=200&ordering=net';
 const listEl = document.getElementById('launchList');
 const statsEl = document.getElementById('stats');
@@ -23,126 +23,121 @@ function statusClass(statusName){
   return 'badge badge--yellow';
 }
 
-// Robust Florida detection: prefer country_code when present (must be US), otherwise use text heuristics.
+// Exact same keywords used for the Florida badge — used to decide visibility
 function isFloridaLaunch(l){
   if(!l?.pad) return false;
   const loc = l.pad.location || {};
   const padName = l.pad.name || '';
   const locName = loc.name || '';
   const locState = loc.state || '';
-  const locRegion = loc.region || '';
   const country = (loc.country_code || '').toUpperCase();
 
-  // If country is present and not US, reject immediately
+  // If country is present and not US, exclude immediately
   if(country && country !== 'US' && country !== 'USA') return false;
 
-  const combined = `${padName} ${locName} ${locRegion} ${locState} ${country}`.toLowerCase();
+  const combined = `${padName} ${locName} ${locState} ${country}`.toLowerCase();
 
-  // 1) explicit ", FL" marker in pad or location
+  // 1) explicit ", FL"
   if(/,\s*fl\b/i.test(padName) || /,\s*fl\b/i.test(locName)) return true;
 
-  // 2) explicit state/region mention
+  // 2) explicit state mention
   if(/\bflorida\b/i.test(combined) || /\bfl\b/i.test(combined)) return true;
 
-  // 3) known Florida keywords
-  const keywords = ['kennedy', 'kennedy space center', 'cape canaveral', 'canaveral', 'patrick', 'merritt island', 'cocoa', 'ksc', 'ccafs', 'ccsfs', 'pad 39a', 'pad 39b', 'lc-39a', 'lc-39b', 'slc-40', 'slc-41'];
+  // 3) exact badge keyword list
+  const keywords = [
+    'kennedy',
+    'kennedy space center',
+    'cape canaveral',
+    'canaveral',
+    'patrick',
+    'merritt island',
+    'cocoa',
+    'ksc',
+    'ccafs',
+    'ccsfs',
+    'pad 39a',
+    'pad 39b',
+    'lc-39a',
+    'lc-39b',
+    'slc-40',
+    'slc-41'
+  ];
+
   for(const kw of keywords){
     if(combined.indexOf(kw) !== -1) return true;
   }
 
-  // 4) fallback: if country missing but pad id matches common Florida pad id patterns (not available here) — currently no-op
   return false;
 }
 
+// Render a single retro watch tile for the next Florida launch
 function renderSingle(next, totalFlorida){
   listEl.innerHTML = '';
   if(!next){
-    emptyEl.hidden = false;
-    statsEl.textContent = 'No upcoming Florida launches found.';
+    listEl.innerHTML = '<div class="empty">No upcoming Florida launches found.</div>';
     return;
   }
-  emptyEl.hidden = true;
-  statsEl.textContent = `Next Florida launch — ${totalFlorida} upcoming Florida launch${totalFlorida>1?'es':''} total`;
 
   const l = next;
-  const card = document.createElement('article');
-  card.className = 'card';
+  const tile = document.createElement('div');
+  tile.className = 'watch-tile';
 
-  const headerRow = document.createElement('div');
-  headerRow.className = 'row';
-
-  const title = document.createElement('h3');
-  title.textContent = l.name || 'Unnamed';
-  headerRow.appendChild(title);
-
-  const statusWrap = document.createElement('div');
-  statusWrap.style.marginLeft = 'auto';
-  const sName = l.status?.name || (l.status? String(l.status): 'Unknown');
-  const statusBadge = document.createElement('span');
-  statusBadge.className = statusClass(sName) + ' badge';
-  statusBadge.textContent = sName || 'Unknown';
-  statusWrap.appendChild(statusBadge);
-  headerRow.appendChild(statusWrap);
-
-  card.appendChild(headerRow);
-
-  const net = document.createElement('div');
-  net.className = 'meta';
-  net.innerHTML = `<strong>${formatNet(l.net || l.window_start || l.window_end)}</strong>`;
-  card.appendChild(net);
-
-  const providerEl = document.createElement('div');
-  providerEl.className = 'field small';
-  providerEl.innerHTML = `<div class="label">Provider</div><div class="value">${l.launch_service_provider?.name || '—'}</div>`;
-  card.appendChild(providerEl);
-
-  const rocketEl = document.createElement('div');
-  rocketEl.className = 'field small';
-  const rocketName = l.rocket?.configuration?.name || l.rocket?.name || '—';
-  rocketEl.innerHTML = `<div class="label">Rocket</div><div class="value">${rocketName}</div>`;
-  card.appendChild(rocketEl);
-
-  const padName = l.pad?.name || l.pad?.location?.name || '—';
-  const padLoc = l.pad?.location?.name || l.pad?.location?.state || '';
-  const padEl = document.createElement('div');
-  padEl.className = 'field small';
-  padEl.innerHTML = `<div class="label">Pad</div><div class="value">${padName}${padLoc?` — ${padLoc}`:''}</div>`;
-  card.appendChild(padEl);
-
-  const fl = document.createElement('div');
-  fl.style.marginTop = '8px';
-  const flBadge = document.createElement('span');
-  flBadge.className = 'badge badge--green';
-  flBadge.textContent = 'Florida';
-  fl.appendChild(flBadge);
-  card.appendChild(fl);
-
-  if(l.url){
-    const a = document.createElement('a');
-    a.href = l.url;
-    a.textContent = 'Details';
-    a.target = '_blank';
-    a.className = 'small';
-    a.style.display = 'inline-block';
-    a.style.marginTop = '10px';
-    card.appendChild(a);
+  // Florida badge
+  if(isFloridaLaunch(l)){
+    const badge = document.createElement('div');
+    badge.className = 'fl-badge';
+    badge.textContent = 'FLORIDA';
+    tile.appendChild(badge);
   }
 
-  listEl.appendChild(card);
+  // Main NET time
+  const timeEl = document.createElement('h1');
+  timeEl.className = 'watch-time';
+  timeEl.textContent = (formatNet(l.net || l.window_start || l.window_end) || '').replace(/\s*\(local\)$/, '');
+  tile.appendChild(timeEl);
+
+  // Info row
+  const infoRow = document.createElement('div');
+  infoRow.className = 'watch-info';
+
+  const left = document.createElement('div');
+  left.className = 'info-left';
+  const label1 = document.createElement('div');
+  label1.className = 'info-label';
+  label1.textContent = 'Pad';
+  const value1 = document.createElement('div');
+  value1.className = 'info-value';
+  value1.textContent = l.pad?.name || l.pad?.location?.name || '—';
+  left.appendChild(label1);
+  left.appendChild(value1);
+
+  const right = document.createElement('div');
+  right.className = 'info-right';
+  const label2 = document.createElement('div');
+  label2.className = 'info-label';
+  label2.textContent = 'Vehicle';
+  const value2 = document.createElement('div');
+  value2.className = 'info-value';
+  value2.textContent = l.rocket?.configuration?.name || l.rocket?.name || '—';
+  right.appendChild(label2);
+  right.appendChild(value2);
+
+  infoRow.appendChild(left);
+  infoRow.appendChild(right);
+  tile.appendChild(infoRow);
+
+  listEl.appendChild(tile);
 }
 
+// Find the next Florida launch by scanning all launches in chronological order
 function updateView(){
-  // Sort all launches ascending by NET/window_start/window_end
   const sorted = [...launchesAll].sort((a,b)=>{
     const ta = Date.parse(a.net || a.window_start || a.window_end || '') || Infinity;
     const tb = Date.parse(b.net || b.window_start || b.window_end || '') || Infinity;
     return ta - tb;
   });
 
-  // Find the first launch in chronological order that matches the Florida predicate
   const nextFlorida = sorted.find(l => isFloridaLaunch(l));
-
-  // Count total Florida matches for the stats
   const totalFlorida = launchesAll.filter(isFloridaLaunch).length;
 
   if(!nextFlorida){
@@ -180,7 +175,6 @@ async function load(){
 }
 
 searchInput.addEventListener('input', ()=>{
-  // keep search but it won't change next-only behavior; still update view if called
   updateView();
 });
 
