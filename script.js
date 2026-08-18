@@ -6,12 +6,21 @@ const emptyEl = document.getElementById('empty');
 const debugEl = document.getElementById('debug');
 let launchesAll = [];
 
-function formatNet(net){
-  if(!net) return 'TBD';
+// Return formatted parts: { dateLabel: 'Mon Aug 20', timeLabel: '5:30 PM' }
+function formatNetParts(net){
+  if(!net) return { dateLabel: 'TBD', timeLabel: '' };
   try{
     const d = new Date(net);
-    return d.toLocaleString(undefined, {dateStyle:'medium', timeStyle:'short'});
-  }catch(e){return net}
+    // weekday short (e.g., Mon)
+    const weekday = new Intl.DateTimeFormat(undefined, { weekday: 'short' }).format(d);
+    // month + day (e.g., Aug 20)
+    const monthDay = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(d);
+    // time (e.g., 5:30 PM)
+    const time = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(d);
+    return { dateLabel: `${weekday} ${monthDay}`, timeLabel: time };
+  }catch(e){
+    return { dateLabel: net, timeLabel: '' };
+  }
 }
 
 // Exact same keywords used for the Florida badge — used to decide visibility
@@ -94,15 +103,16 @@ function renderSingle(next, totalFlorida){
   label.textContent = 'Next Launch:';
   tWrap.appendChild(label);
 
-  // Build the NET display and insert a line break before the year
-  const rawNet = formatNet(l.net || l.window_start || l.window_end) || '';
-  const netShort = rawNet.trim();
-  const netWithBreak = netShort.replace(/,?\s+(\d{4})(?!.*\d)/, ',\n$1');
+  // Build the NET display using weekday + month/day and time, omitting the year to save space
+  const parts = formatNetParts(l.net || l.window_start || l.window_end);
+  const dateLine = parts.dateLabel; // e.g., "Mon Aug 20"
+  const timeLine = parts.timeLabel; // e.g., "5:30 PM"
 
   const timeEl = document.createElement('h1');
   timeEl.className = 'watch-time';
-  timeEl.textContent = netWithBreak;
-  timeEl.title = netShort;
+  // Put date and time on separate lines for responsive stacking; same size
+  timeEl.textContent = `${dateLine}${timeLine ? '\n' + timeLine : ''}`;
+  timeEl.title = `${dateLine}${timeLine ? ', ' + timeLine : ''}`;
 
   tWrap.appendChild(timeEl);
   listEl.appendChild(tWrap);
