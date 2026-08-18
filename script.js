@@ -1,5 +1,5 @@
 // script.js — fetch upcoming launches and highlight Florida pads (show all by default)
-const API = 'https://ll.thespacedevs.com/2.3.0/launches/upcoming/?limit=100&ordering=net';
+const API = 'https://ll.thespacedevs.com/2.3.0/launches/upcoming/?limit=200&ordering=net';
 const listEl = document.getElementById('launchList');
 const statsEl = document.getElementById('stats');
 const emptyEl = document.getElementById('empty');
@@ -23,13 +23,46 @@ function statusClass(statusName){
   return 'badge badge--yellow';
 }
 
-// Detect Florida pads using multiple heuristics
+// Intelligent Florida detection
 function isFloridaLaunch(l){
-  const loc = l.pad?.location || {};
-  const padName = l.pad?.name || '';
-  const combined = `${padName} ${loc.name || ''} ${loc.region || ''} ${loc.state || ''} ${loc.country_code || ''}`.toLowerCase();
-  // common Florida site keywords - vandenberg removed to avoid false positives
-  return /florida/i.test(combined) || /\bfl\b/i.test(combined) || /(cape canaveral|kennedy|patrick|merritt island|canaveral)/i.test(combined);
+  if(!l?.pad) return false;
+  const loc = l.pad.location || {};
+  const padName = l.pad.name || '';
+  const locName = loc.name || '';
+  const locRegion = loc.region || '';
+  const locState = loc.state || '';
+  const country = (loc.country_code || '') + '';
+
+  // Combined text to search (normalized)
+  const combined = `${padName} ${locName} ${locRegion} ${locState} ${country}`.toLowerCase();
+
+  // 1) Explicit state field check (most reliable if present)
+  if(/\bflorida\b/i.test(locState) || /^fl$/i.test(locState)) return true;
+
+  // 2) Comma-style suffixes like "Kennedy Space Center, FL" or "..., FL, USA"
+  if(/,\s*fl\b/i.test(padName) || /,\s*fl\b/i.test(locName)) return true;
+
+  // 3) Common Florida pad keywords
+  const floridaKeywords = [
+    'kennedy', 'kennedy space center',
+    'cape canaveral', 'canaveral',
+    'patrick', 'merritt island', 'cocoa',
+    'pad 39a', 'lc-39a', 'launch complex 39a',
+    'pad 39b', 'lc-39b',
+    'sls', 'sls pad',
+    'ksc', 'ccafs', 'ccsfs'
+  ];
+  for(const kw of floridaKeywords){
+    if(combined.indexOf(kw) !== -1) return true;
+  }
+
+  // 4) Case where padName includes an em-dash and then "..., FL" e.g. "Launch Complex 39A — Kennedy Space Center, FL, USA"
+  if(/[-–—].*\,\s*fl\b/i.test(padName)) return true;
+
+  // 5) If country is US/USA and combined contains a Florida abbreviation or keyword
+  if(/^(us|usa)$/i.test(country) && (/\bfl\b/i.test(combined) || /kennedy|canaveral|patrick|merritt island/i.test(combined))) return true;
+
+  return false;
 }
 
 function render(list){
@@ -139,9 +172,10 @@ async function load(){
     const res = await fetch(API);
     if(!res.ok) throw new Error(res.status + ' ' + res.statusText);
     const data = await res.json();
-    launchesAll = data.results || [];
+    // Accept either an array or { results: [...] }
+    const all = Array.isArray(data) ? data : (data.results || []);
+    launchesAll = all;
     if(!launchesAll.length){
-      // show debug info so we can see what the API returned
       debugEl.hidden = false;
       debugEl.textContent = JSON.stringify(data, null, 2);
       console.warn('Launches array empty — API returned:', data);
