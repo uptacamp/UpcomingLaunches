@@ -39,13 +39,14 @@ function render(list){
   listEl.innerHTML = '';
   if(!list.length){
     emptyEl.hidden = false;
-    statsEl.textContent = '0 launches found';
+    statsEl.textContent = 'No upcoming Florida launches found.';
     return;
   }
   emptyEl.hidden = true;
 
-  const total = list.length;
-  const floridaCount = list.filter(isFloridaLaunch).length;
+  // Allow passing total count via property when rendering a single next item
+  const total = list._totalFloridaCount || list.length;
+  const floridaCount = list._totalFloridaCount || list.filter(isFloridaLaunch).length;
   statsEl.textContent = `${total} upcoming launch${total>1?'es':''} — ${floridaCount} Florida`;
 
   for(const l of list){
@@ -128,11 +129,29 @@ function matchesSearch(item, q){
     .some(s => s.toLowerCase().includes(q));
 }
 
+// Choose the next Florida launch by scanning all launches in chronological order
 function updateView(){
-  const q = searchInput.value.trim();
-  const base = launchesAll;
-  const filtered = q ? base.filter(l => matchesSearch(l, q)) : base;
-  render(filtered);
+  // Sort all launches ascending by NET/window_start/window_end
+  const sorted = [...launchesAll].sort((a, b) => {
+    const ta = Date.parse(a.net || a.window_start || a.window_end || '') || Infinity;
+    const tb = Date.parse(b.net || b.window_start || b.window_end || '') || Infinity;
+    return ta - tb;
+  });
+
+  // Find the first launch in chronological order that matches the Florida predicate
+  const nextFlorida = sorted.find(l => isFloridaLaunch(l));
+
+  // Count total Florida matches for the stats
+  const totalFlorida = launchesAll.filter(isFloridaLaunch).length;
+
+  if(!nextFlorida){
+    render([]);
+    return;
+  }
+
+  const listToRender = [nextFlorida];
+  listToRender._totalFloridaCount = totalFlorida;
+  render(listToRender);
 }
 
 async function load(){
@@ -152,6 +171,7 @@ async function load(){
 }
 
 searchInput.addEventListener('input', ()=>{
+  // keep search but it won't change next-only behavior; still update view if called
   updateView();
 });
 
