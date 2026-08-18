@@ -1,4 +1,4 @@
-// script.js — fetch upcoming launches and build a pad-id whitelist automatically
+// script.js — fetch upcoming launches and filter strictly by ", FL" in pad/location
 const API = 'https://ll.thespacedevs.com/2.3.0/launches/upcoming/?limit=200&ordering=net';
 const listEl = document.getElementById('launchList');
 const statsEl = document.getElementById('stats');
@@ -23,46 +23,14 @@ function statusClass(statusName){
   return 'badge badge--yellow';
 }
 
-// Primary heuristic used to identify Florida-like pad names (does NOT use pad IDs)
-function heuristicIsFlorida(l){
-  if(!l?.pad) return false;
-  const loc = l.pad.location || {};
-  const padName = l.pad.name || '';
-  const locName = loc.name || '';
-  const locRegion = loc.region || '';
-  const locState = loc.state || '';
-  const country = (loc.country_code || '') + '';
-  const combined = `${padName} ${locName} ${locRegion} ${locState} ${country}`.toLowerCase();
-
-  if(/\bflorida\b/i.test(locState) || /^fl$/i.test(locState)) return true;
-  if(/,\s*fl\b/i.test(padName) || /,\s*fl\b/i.test(locName)) return true;
-  if(/[-–—].*\,\s*fl\b/i.test(padName)) return true;
-
-  const floridaKeywords = [
-    'kennedy', 'kennedy space center',
-    'cape canaveral', 'canaveral', 'ccafs', 'ccsfs',
-    'patrick', 'patrick space', 'merritt island', 'cocoa',
-    'ksc', 'launch complex 39a', 'lc-39a', 'pad 39a',
-    'launch complex 39b', 'lc-39b', 'pad 39b'
-  ];
-  for(const kw of floridaKeywords){
-    if(combined.indexOf(kw) !== -1) return true;
-  }
-
-  if(/^(us|usa)$/i.test(country) && (/\bfl\b/i.test(combined) || /kennedy|canaveral|patrick|merritt island/i.test(combined))) return true;
-  return false;
-}
-
-// Pad-id whitelist (populated automatically from current API results)
-let FL_PAD_IDS = new Set();
-
+// Simple Florida detection: match ", FL" (comma + FL) in pad name or pad location name
 function isFloridaLaunch(l){
   if(!l?.pad) return false;
-  const padIdStr = String(l.pad.id || '');
-  // 1) pad-id whitelist (auto-populated)
-  if(FL_PAD_IDS.size && FL_PAD_IDS.has(padIdStr)) return true;
-  // 2) fallback to heuristic
-  return heuristicIsFlorida(l);
+  const padName = l.pad.name || '';
+  const locName = l.pad.location?.name || '';
+  // check for comma + optional spaces + FL word boundary
+  const commaFl = /,\s*fl\b/i;
+  return commaFl.test(padName) || commaFl.test(locName);
 }
 
 function render(list){
@@ -170,31 +138,15 @@ async function load(){
     const res = await fetch(API);
     if(!res.ok) throw new Error(res.status + ' ' + res.statusText);
     const data = await res.json();
-    // Accept either an array or { results: [...] }
     const all = Array.isArray(data) ? data : (data.results || []);
     launchesAll = all;
-
-    // Auto-build pad-id whitelist from heuristic matches in current results
-    const candidates = Array.from(new Set(launchesAll
-      .filter(heuristicIsFlorida)
-      .map(l => String(l.pad?.id || ''))
-      .filter(Boolean)));
-    FL_PAD_IDS = new Set(candidates);
-
-    if(FL_PAD_IDS.size){
-      debugEl.hidden = false;
-      const map = launchesAll
-        .filter(l => FL_PAD_IDS.has(String(l.pad?.id || '')))
-        .map(l => ({ pad_id: l.pad?.id, pad_name: l.pad?.name, pad_location: l.pad?.location?.name }));
-      debugEl.textContent = 'Auto-detected Florida pad IDs (added to whitelist):\n' + JSON.stringify(map, null, 2) + '\n\nIf these look correct you can hard-code their IDs into FL_PAD_IDS in script.js for permanent matching.';
-    } else if(!launchesAll.length){
+    if(!launchesAll.length){
       debugEl.hidden = false;
       debugEl.textContent = JSON.stringify(data, null, 2);
       console.warn('Launches array empty — API returned:', data);
     } else {
       debugEl.hidden = true;
     }
-
     updateView();
   }catch(err){
     statsEl.textContent = 'Failed to load launches';
