@@ -1,4 +1,4 @@
-// script.js — fetch upcoming launches and filter strictly by ", FL" in pad/location
+// script.js — fetch upcoming launches and filter by country + ", FL" in pad/location
 const API = 'https://ll.thespacedevs.com/2.3.0/launches/upcoming/?limit=200&ordering=net';
 const listEl = document.getElementById('launchList');
 const statsEl = document.getElementById('stats');
@@ -23,14 +23,29 @@ function statusClass(statusName){
   return 'badge badge--yellow';
 }
 
-// Simple Florida detection: match ", FL" (comma + FL) in pad name or pad location name
+// Stricter Florida detection: require US country_code when present, then match ", FL" or known Florida keywords
 function isFloridaLaunch(l){
   if(!l?.pad) return false;
+  const loc = l.pad.location || {};
+  const country = (loc.country_code || '').toUpperCase();
+  // If country is present and not the United States, reject immediately (filters out Chinese launches)
+  if(country && country !== 'US' && country !== 'USA') return false;
+
   const padName = l.pad.name || '';
-  const locName = l.pad.location?.name || '';
-  // check for comma + optional spaces + FL word boundary
+  const locName = loc.name || '';
+  const combined = `${padName} ${locName}`.toLowerCase();
+
+  // 1) comma-style ", FL" in pad or location
   const commaFl = /,\s*fl\b/i;
-  return commaFl.test(padName) || commaFl.test(locName);
+  if(commaFl.test(padName) || commaFl.test(locName)) return true;
+
+  // 2) known Florida site keywords (only after country check)
+  const keywords = ['kennedy','kennedy space center','cape canaveral','canaveral','patrick','merritt island','cocoa','ksc','ccafs','ccsfs'];
+  for(const kw of keywords){
+    if(combined.indexOf(kw) !== -1) return true;
+  }
+
+  return false;
 }
 
 function render(list){
