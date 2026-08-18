@@ -5,17 +5,64 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Upcoming Launch — Retro Watch</title>
   <link rel="stylesheet" href="styles.css">
+  <script>
+  // Clear caches/localStorage and unregister service workers on first load, then reload with ?fresh=1
+  (function(){
+    try{
+      const isFresh = location.search.includes('fresh=1');
+      if(!isFresh){
+        // Clear Cache Storage entries
+        if('caches' in window){
+          caches.keys().then(keys=>Promise.all(keys.map(k=>caches.delete(k)))).catch(()=>{});
+        }
+
+        // Unregister any service workers
+        if('serviceWorker' in navigator){
+          navigator.serviceWorker.getRegistrations().then(regs=>regs.forEach(r=>r.unregister())).catch(()=>{});
+        }
+
+        // Clear localStorage (avoid touching sessionStorage so we can detect freshness if needed)
+        try{ localStorage.clear(); }catch(e){}
+
+        // Reload once with a freshness marker to avoid loop
+        const newUrl = location.origin + location.pathname + '?fresh=1';
+        location.replace(newUrl);
+      }
+    }catch(e){
+      // swallow errors — we don't want to show anything to the user
+      try{ console.error(e); }catch(_){}
+    }
+  })();
+  </script>
 </head>
 <body>
   <main id="watch" class="watch">
-    <!-- script will render into #launchList (do not pre-assign watch-tile class to avoid nested tiles) -->
+    <!-- script will render into #launchList -->
     <section id="launchList" aria-live="polite"></section>
-    <!-- hidden helpers (kept for the script) -->
     <div id="stats" hidden></div>
     <div id="empty" hidden></div>
     <pre id="debug" hidden></pre>
   </main>
 
-  <script src="script.js?t=20260818T1210" defer></script>
+  <script src="script.js?t=20260818T1202" defer></script>
+  <script>
+  // Auto-refresh every 5 minutes — reload with cache-busting param while preserving fresh=1
+  (function(){
+    const intervalMs = 5 * 60 * 1000; // 5 minutes
+    setInterval(()=>{
+      try{
+        const url = new URL(location.href);
+        url.searchParams.set('t', Date.now());
+        url.searchParams.set('fresh', '1');
+        // replace to avoid adding history entries
+        location.replace(url.toString());
+      }catch(e){
+        try{ console.error(e); }catch(_){}
+        // fallback to a simple reload
+        location.reload();
+      }
+    }, intervalMs);
+  })();
+  </script>
 </body>
 </html>
