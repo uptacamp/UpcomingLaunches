@@ -1,36 +1,37 @@
-/* styles.css — retro digital-watch UI */
+/* styles.css — clean retro watch UI (no overlapping) */
 :root{
   --bg:#030306;
   --tile:#001218;
   --digit:#39ff14;
   --muted:#7fd3c9;
   --accent:#00ffd5;
-  --glass: rgba(255,255,255,0.02);
   --tile-radius:10px;
 }
 
+/* base */
 *{box-sizing:border-box}
 html,body{height:100%;margin:0;background:var(--bg);font-family: 'Courier New', Courier, monospace;color:var(--digit);-webkit-font-smoothing:antialiased}
 body{display:flex;align-items:center;justify-content:center;padding:18px}
 
-/* The single watch tile */
+/* single tile container */
 .watch-tile{
-  width:min(640px,95vw);
-  height:min(360px,60vh);
+  width:min(780px,94vw);
+  height:min(420px,64vh);
   background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
   border-radius:var(--tile-radius);
   border:2px solid rgba(57,255,20,0.08);
-  box-shadow: 0 6px 18px rgba(0,0,0,0.9), 0 0 40px rgba(0,255,213,0.04) inset;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.9), 0 0 40px rgba(0,255,213,0.03) inset;
   display:flex;
+  flex-direction:column;               /* stack time then info */
   align-items:center;
-  justify-content:center;
+  justify-content:flex-start;
   position:relative;
-  padding:22px;
+  padding:28px;
   overflow:hidden;
   background-color:var(--tile);
 }
 
-/* Subtle scanline texture */
+/* subtle texture but no absolutely-positioned layers that overlap content */
 .watch-tile::before{
   content:"";
   position:absolute;inset:0;
@@ -39,55 +40,55 @@ body{display:flex;align-items:center;justify-content:center;padding:18px}
   pointer-events:none;
 }
 
-/* Main digital NET time */
+/* main time — use clamp to avoid overflow on small screens */
 .watch-time{
   font-family: 'Digital-7', 'Courier New', monospace;
-  font-weight:700;
   color:var(--digit);
-  font-size:6.6vw;
+  font-weight:700;
+  font-size: clamp(28px, 8.5vw, 96px); /* responsive but bounded */
   line-height:1;
-  letter-spacing:0.02em;
+  letter-spacing:0.01em;
   text-align:center;
-  text-shadow:0 0 10px rgba(57,255,20,0.12),0 0 24px rgba(57,255,20,0.06);
-  margin:0;
+  text-shadow: 0 0 8px rgba(57,255,20,0.10);
+  margin:10px 0 6px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  max-width:100%;
 }
 
-/* Small label row under the time */
+/* info row pinned to bottom using margin-top:auto */
 .watch-info{
-  position:absolute;
-  bottom:18px;
-  left:22px;
-  right:22px;
+  margin-top:auto;
+  width:100%;
   display:flex;
   justify-content:space-between;
   align-items:center;
+  padding:8px 12px 6px;
   color:var(--muted);
   font-size:0.95rem;
+  gap:12px;
 }
 
-.info-left{display:flex;flex-direction:column;gap:6px}
-.info-label{color:var(--muted);font-size:0.82rem}
-.info-value{color:var(--digit);font-weight:700;letter-spacing:0.02em}
-
-.info-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
-.info-right .info-value{font-weight:600;color:var(--accent)}
-
-.fl-badge{
-  position:absolute;
-  top:12px;
-  right:12px;
-  background:transparent;
-  border:1px solid rgba(57,255,20,0.18);
+/* left and right columns */
+.info-left, .info-right{display:flex;flex-direction:column;gap:4px}
+.info-label{color:var(--muted);font-size:0.78rem}
+.info-value{
   color:var(--digit);
-  padding:6px 8px;
-  border-radius:6px;
-  font-size:0.8rem;
-  backdrop-filter: blur(2px);
+  font-weight:700;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  max-width:calc(50vw);
 }
 
-.empty{color:var(--muted);font-size:1rem;text-align:center}
+/* SpaceX logo view (error fallback) */
+.logo-wrap{display:flex;align-items:center;justify-content:center;height:100%;width:100%;}
+.spacex-logo{max-width:60vw;max-height:60vh;display:block;margin:auto;filter:brightness(1.1) invert(0);}
 
+/* smaller screens adjustments */
 @media (max-width:420px){
-  .watch-time{font-size:12vw}
-  .watch-tile{padding:14px;height:48vh}
+  .watch-tile{padding:14px;height:56vh}
+  .watch-time{font-size: clamp(22px,12vw,64px)}
+  .info-value{max-width:40vw}
 }

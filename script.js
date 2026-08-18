@@ -61,6 +61,16 @@ function isFloridaLaunch(l){
   return false;
 }
 
+function showSpaceXLogo(){
+  // Remove tile styles to avoid overlap and display only the logo
+  listEl.className = '';
+  listEl.innerHTML = `
+    <div class="logo-wrap">
+      <img class="spacex-logo" src="https://upload.wikimedia.org/wikipedia/commons/d/de/SpaceX-Logo.svg" alt="SpaceX logo"/>
+    </div>
+  `;
+}
+
 // Render a single retro watch tile for the next Florida launch — populate listEl directly
 function renderSingle(next, totalFlorida){
   // ensure listEl acts as the tile container (avoid nesting another .watch-tile)
@@ -132,27 +142,22 @@ function updateView(){
 
 async function load(){
   try{
-    statsEl.textContent = 'Loading upcoming launches…';
+    // fetch the API
     const res = await fetch(API);
-    if(!res.ok) throw new Error(res.status + ' ' + res.statusText);
+    // If anything other than a 200 OK, show the SpaceX logo and nothing else
+    if(res.status !== 200){
+      showSpaceXLogo();
+      return;
+    }
+
     const data = await res.json();
     const all = Array.isArray(data) ? data : (data.results || []);
     launchesAll = all;
-    if(!launchesAll.length){
-      debugEl.hidden = false;
-      debugEl.textContent = JSON.stringify(data, null, 2);
-      console.warn('Launches array empty — API returned:', data);
-    } else {
-      debugEl.hidden = true;
-    }
     updateView();
   }catch(err){
-    statsEl.textContent = 'Failed to load launches';
-    emptyEl.hidden = false;
-    debugEl.hidden = false;
-    debugEl.textContent = `Fetch error: ${err.message}`;
-    listEl.innerHTML = `<div class="empty">Error: ${err.message}</div>`;
+    // On network or parsing errors, show the SpaceX logo instead of error text
     console.error(err);
+    showSpaceXLogo();
   }
 }
 
