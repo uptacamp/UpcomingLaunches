@@ -148,14 +148,14 @@ async function startAtomicCountdown(targetIso, displayEl){
     const days = Math.floor(totalHours / 24);
 
     // Format: D:HH:MM:SS with zero padding for HH/MM/SS, days as variable width
--    const daysStr = String(days);
-+    // Always show days as at least two digits (so under 1 day shows "00"); keeps layout stable
-+    const daysStr = String(days).padStart(2, '0');
+    // Always show days as at least two digits (so under 1 day shows "00"); keeps layout stable
+    const daysStr = String(days).padStart(2, '0');
     const hh = String(hours).padStart(2, '0');
     const mm = String(minutes).padStart(2, '0');
     const ss = String(seconds).padStart(2, '0');
 
-    displayEl.textContent = `${daysStr}:${hh}:${mm}:${ss}`;
+    // Prepend a minus sign before the countdown (visual indicator)
+    displayEl.textContent = `-${daysStr}:${hh}:${mm}:${ss}`;
 
     if(diff <= 0){
       // countdown finished — clear interval and show zeros
