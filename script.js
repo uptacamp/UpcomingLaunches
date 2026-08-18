@@ -6,6 +6,10 @@ const emptyEl = document.getElementById('empty');
 const debugEl = document.getElementById('debug');
 let launchesAll = [];
 
+// Countdown control handles so we can stop when the view updates
+let countdownInterval = null;
+let countdownAbort = null;
+
 // Return formatted parts: { dateLabel: 'Mon Aug 20', timeLabel: '5:30 PM' }
 function formatNetParts(net){
   if(!net) return { dateLabel: 'TBD', timeLabel: '' };
@@ -80,11 +84,96 @@ function showSpaceXLogo(){
   `;
 }
 
+// Stop any running countdown (clear interval and abort any outstanding time fetch)
+function stopCountdown(){
+  if(countdownInterval){
+    clearInterval(countdownInterval);
+    countdownInterval = null;
+  }
+  if(countdownAbort){
+    try{ countdownAbort.abort(); }catch(e){}
+    countdownAbort = null;
+  }
+}
+
+// Start an "atomic" countdown using an authoritative time source for America/New_York.
+// targetIso is an ISO string for the launch time (UTC-aware). The countdown will show D:HH:MM:SS
+async function startAtomicCountdown(targetIso, displayEl){
+  stopCountdown();
+
+  // Resolve target time as epoch ms
+  const targetMs = Date.parse(targetIso);
+  if(isNaN(targetMs)){
+    displayEl.textContent = 'TBD';
+    return;
+  }
+
+  // Fetch world time for America/New_York to establish a reliable 'now' in the Eastern timezone
+  const timeUrl = 'https://worldtimeapi.org/api/timezone/America/New_York';
+  let serverNowMs = Date.now();
+  let perfStart = performance.now();
+
+  try{
+    countdownAbort = new AbortController();
+    const res = await fetch(timeUrl, { signal: countdownAbort.signal });
+    if(res.ok){
+      const json = await res.json();
+      // worldtimeapi provides unixtime (seconds) and datetime; prefer unixtime for simplicity
+      if(json.unixtime){
+        serverNowMs = (json.unixtime * 1000) + (json.raw_offset || 0) * 1000 + (json.dst_offset || 0) * 1000;
+      }else if(json.datetime){
+        serverNowMs = Date.parse(json.datetime);
+      }
+    }
+  }catch(e){
+    // If the fetch fails, fall back to local clock (not ideal but still works)
+    try{ console.warn('worldtimeapi fetch failed, falling back to local time', e); }catch(_){}
+    serverNowMs = Date.now();
+  }finally{
+    perfStart = performance.now();
+    countdownAbort = null;
+  }
+
+  // Update the display every 250ms for smooth seconds rollover
+  function tick(){
+    const nowMs = serverNowMs + (performance.now() - perfStart);
+    let diff = Math.max(0, targetMs - nowMs);
+
+    const totalSeconds = Math.floor(diff / 1000);
+    const seconds = totalSeconds % 60;
+    const totalMinutes = Math.floor(totalSeconds / 60);
+    const minutes = totalMinutes % 60;
+    const totalHours = Math.floor(totalMinutes / 60);
+    const hours = totalHours % 24;
+    const days = Math.floor(totalHours / 24);
+
+    // Format: D:HH:MM:SS with zero padding for HH/MM/SS, days as variable width
+    const daysStr = String(days);
+    const hh = String(hours).padStart(2, '0');
+    const mm = String(minutes).padStart(2, '0');
+    const ss = String(seconds).padStart(2, '0');
+
+    displayEl.textContent = `${daysStr}:${hh}:${mm}:${ss}`;
+
+    if(diff <= 0){
+      // countdown finished — clear interval and show zeros
+      stopCountdown();
+      return;
+    }
+  }
+
+  // run immediately and then every second
+  tick();
+  countdownInterval = setInterval(tick, 1000);
+}
+
 // Render a single retro watch tile for the next Florida launch — populate listEl directly
 function renderSingle(next, totalFlorida){
   // ensure listEl acts as the tile container (avoid nesting another .watch-tile)
   listEl.className = 'watch-tile';
   listEl.innerHTML = '';
+
+  stopCountdown();
 
   if(!next){
     listEl.innerHTML = '<div class="empty">No upcoming Florida launches found.</div>';
@@ -115,6 +204,14 @@ function renderSingle(next, totalFlorida){
   timeEl.title = `${dateLine}${timeLine ? ', ' + timeLine : ''}`;
 
   tWrap.appendChild(timeEl);
+
+  // New countdown row below the date/time — no labels per request
+  const countdownEl = document.createElement('div');
+  countdownEl.className = 'watch-time countdown';
+  countdownEl.textContent = '...';
+  // make it a separate row
+  tWrap.appendChild(countdownEl);
+
   listEl.appendChild(tWrap);
 
   // Info row
@@ -146,6 +243,10 @@ function renderSingle(next, totalFlorida){
   infoRow.appendChild(left);
   infoRow.appendChild(right);
   listEl.appendChild(infoRow);
+
+  // Start the atomic countdown using the launch's NET (or window_start/window_end fallback)
+  const targetIso = l.net || l.window_start || l.window_end;
+  startAtomicCountdown(targetIso, countdownEl);
 }
 
 // Find the next Florida launch by scanning all launches in chronological order
