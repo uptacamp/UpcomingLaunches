@@ -153,7 +153,7 @@ async function startAtomicCountdown(targetIso, displayEl){
     const mm = String(minutes).padStart(2, '0');
     const ss = String(seconds).padStart(2, '0');
 
-    displayEl.textContent = `${daysStr}:${hh}:${mm}:${ss}`;
+    displayEl.textContent = '-' + `${daysStr}:${hh}:${mm}:${ss}`;
 
     if(diff <= 0){
       // countdown finished — clear interval and show zeros
