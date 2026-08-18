@@ -4,7 +4,6 @@ const listEl = document.getElementById('launchList');
 const statsEl = document.getElementById('stats');
 const emptyEl = document.getElementById('empty');
 const debugEl = document.getElementById('debug');
-const searchInput = document.getElementById('searchInput');
 let launchesAll = [];
 
 function formatNet(net){
@@ -173,9 +172,5 @@ async function load(){
     console.error(err);
   }
 }
-
-searchInput.addEventListener('input', ()=>{
-  updateView();
-});
 
 load();
