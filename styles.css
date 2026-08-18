@@ -1,94 +1,108 @@
-/* styles.css — clean retro watch UI (no overlapping) */
+/* styles.css — full-screen responsive retro watch UI */
 :root{
   --bg:#030306;
   --tile:#001218;
   --digit:#39ff14;
   --muted:#7fd3c9;
   --accent:#00ffd5;
-  --tile-radius:10px;
+  --tile-radius:12px;
 }
 
-/* base */
 *{box-sizing:border-box}
 html,body{height:100%;margin:0;background:var(--bg);font-family: 'Courier New', Courier, monospace;color:var(--digit);-webkit-font-smoothing:antialiased}
-body{display:flex;align-items:center;justify-content:center;padding:18px}
+body{display:flex;align-items:center;justify-content:center}
 
-/* single tile container */
+/* Make the tile use the entire viewport while keeping a small margin */
 .watch-tile{
-  width:min(780px,94vw);
-  height:min(420px,64vh);
+  width:calc(100vw - 40px);
+  height:calc(100vh - 40px);
   background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
   border-radius:var(--tile-radius);
-  border:2px solid rgba(57,255,20,0.08);
-  box-shadow: 0 10px 30px rgba(0,0,0,0.9), 0 0 40px rgba(0,255,213,0.03) inset;
+  border:2px solid rgba(57,255,20,0.06);
+  box-shadow: 0 18px 50px rgba(0,0,0,0.9), 0 0 60px rgba(0,255,213,0.03) inset;
   display:flex;
-  flex-direction:column;               /* stack time then info */
+  flex-direction:column;
   align-items:center;
-  justify-content:flex-start;
+  justify-content:center;
   position:relative;
-  padding:28px;
+  padding:36px 48px 64px 48px; /* bottom padding leaves space for info row */
   overflow:hidden;
   background-color:var(--tile);
 }
 
-/* subtle texture but no absolutely-positioned layers that overlap content */
+/* subtle but subtle scanlines */
 .watch-tile::before{
   content:"";
   position:absolute;inset:0;
-  background:repeating-linear-gradient(180deg, rgba(255,255,255,0.01) 0 1px, transparent 1px 4px);
+  background:repeating-linear-gradient(180deg, rgba(255,255,255,0.006) 0 1px, transparent 1px 4px);
   mix-blend-mode:overlay;
   pointer-events:none;
 }
 
-/* main time — use clamp to avoid overflow on small screens */
+/* Time wrapper — center content and allow it to grow/shrink */
+.time-wrap{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex:1 1 auto;
+  width:100%;
+}
+
+/* Main NET time — very large, responsive, and allowed to wrap without truncation */
 .watch-time{
   font-family: 'Digital-7', 'Courier New', monospace;
   color:var(--digit);
   font-weight:700;
-  font-size: clamp(28px, 8.5vw, 96px); /* responsive but bounded */
-  line-height:1;
+  font-size: clamp(48px, 18vh, 220px); /* responsive: scales with viewport height */
+  line-height:0.92;
   letter-spacing:0.01em;
   text-align:center;
-  text-shadow: 0 0 8px rgba(57,255,20,0.10);
-  margin:10px 0 6px;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
+  text-shadow: 0 0 12px rgba(57,255,20,0.12);
+  margin:0;
   max-width:100%;
+  white-space:normal;       /* allow wrapping */
+  overflow-wrap:break-word; /* break long segments if needed */
+  word-break:normal;
 }
 
-/* info row pinned to bottom using margin-top:auto */
+/* Info row pinned to the bottom of the tile so it never overlaps the large time */
 .watch-info{
-  margin-top:auto;
-  width:100%;
+  position:absolute;
+  left:48px;
+  right:48px;
+  bottom:28px;
   display:flex;
   justify-content:space-between;
   align-items:center;
-  padding:8px 12px 6px;
   color:var(--muted);
-  font-size:0.95rem;
   gap:12px;
+  font-size:1.05rem;
 }
 
-/* left and right columns */
-.info-left, .info-right{display:flex;flex-direction:column;gap:4px}
-.info-label{color:var(--muted);font-size:0.78rem}
+.info-left, .info-right{display:flex;flex-direction:column;gap:6px}
+.info-label{color:var(--muted);font-size:0.85rem}
 .info-value{
   color:var(--digit);
   font-weight:700;
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap;
-  max-width:calc(50vw);
+  max-width:45vw;
 }
 
 /* SpaceX logo view (error fallback) */
 .logo-wrap{display:flex;align-items:center;justify-content:center;height:100%;width:100%;}
-.spacex-logo{max-width:60vw;max-height:60vh;display:block;margin:auto;filter:brightness(1.1) invert(0);}
+.spacex-logo{max-width:70vw;max-height:70vh;display:block;margin:auto;filter:brightness(1.05);} 
 
-/* smaller screens adjustments */
-@media (max-width:420px){
-  .watch-tile{padding:14px;height:56vh}
-  .watch-time{font-size: clamp(22px,12vw,64px)}
+/* Small screens: ensure the time remains readable and fits */
+@media (max-width:900px){
+  .watch-tile{width:calc(100vw - 20px);height:calc(100vh - 20px);padding:22px}
+  .watch-time{font-size: clamp(36px, 14vh, 140px)}
   .info-value{max-width:40vw}
+}
+
+@media (max-width:420px){
+  .watch-time{font-size: clamp(28px, 12vh, 96px)}
+  .info-value{max-width:60vw}
+  .watch-info{left:18px;right:18px;bottom:18px;font-size:0.95rem}
 }
