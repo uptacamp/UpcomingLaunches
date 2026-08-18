@@ -46,23 +46,37 @@ body{display:flex;align-items:center;justify-content:center}
   justify-content:center;
   flex:1 1 auto;
   width:100%;
+  flex-direction:column;
 }
 
-/* Main NET time — very large, responsive, and allowed to wrap without truncation */
+/* Small label above the date */
+.next-label{
+  font-family: 'Digital-7', 'Courier New', monospace;
+  color:var(--muted);
+  font-weight:600;
+  font-size: clamp(14px, 2.2vh, 20px);
+  letter-spacing:0.08em;
+  margin-bottom:10px;
+  text-align:center;
+}
+
+/* Main NET time — same size for month/day/year, slightly smaller max to avoid overflow */
 .watch-time{
   font-family: 'Digital-7', 'Courier New', monospace;
   color:var(--digit);
   font-weight:700;
-  font-size: clamp(48px, 18vh, 220px); /* responsive: scales with viewport height */
-  line-height:0.92;
+  /* use both vh and vw to scale, with a smaller max to avoid overflow on very large monitors */
+  font-size: clamp(48px, min(20vh, 16vw), 220px);
+  line-height:1.0;
   letter-spacing:0.01em;
   text-align:center;
   text-shadow: 0 0 12px rgba(57,255,20,0.12);
   margin:0;
   max-width:100%;
-  white-space:normal;       /* allow wrapping */
-  overflow-wrap:break-word; /* break long segments if needed */
-  word-break:normal;
+  white-space: pre-line;      /* preserve inserted line breaks (e.g. \n) */
+  overflow-wrap:anywhere;    /* break anywhere if still needed */
+  word-break:break-word;
+  -webkit-font-smoothing:antialiased;
 }
 
 /* Info row pinned to the bottom of the tile so it never overlaps the large time */

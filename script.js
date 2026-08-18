@@ -10,7 +10,7 @@ function formatNet(net){
   if(!net) return 'TBD';
   try{
     const d = new Date(net);
-    return d.toLocaleString(undefined, {dateStyle:'medium', timeStyle:'short'}) + ' (local)';
+    return d.toLocaleString(undefined, {dateStyle:'medium', timeStyle:'short'});
   }catch(e){return net}
 }
 
@@ -84,11 +84,28 @@ function renderSingle(next, totalFlorida){
 
   const l = next;
 
-  // Main NET time
+  // Time wrapper
+  const tWrap = document.createElement('div');
+  tWrap.className = 'time-wrap';
+
+  // Small label above the date
+  const label = document.createElement('div');
+  label.className = 'next-label';
+  label.textContent = 'Next Launch:';
+  tWrap.appendChild(label);
+
+  // Build the NET display and insert a line break before the year
+  const rawNet = formatNet(l.net || l.window_start || l.window_end) || '';
+  const netShort = rawNet.trim();
+  const netWithBreak = netShort.replace(/,?\s+(\d{4})(?!.*\d)/, ',\n$1');
+
   const timeEl = document.createElement('h1');
   timeEl.className = 'watch-time';
-  timeEl.textContent = (formatNet(l.net || l.window_start || l.window_end) || '').replace(/\s*\(local\)$/, '');
-  listEl.appendChild(timeEl);
+  timeEl.textContent = netWithBreak;
+  timeEl.title = netShort;
+
+  tWrap.appendChild(timeEl);
+  listEl.appendChild(tWrap);
 
   // Info row
   const infoRow = document.createElement('div');
