@@ -23,13 +23,13 @@ function statusClass(statusName){
   return 'badge badge--yellow';
 }
 
-// Stricter Florida detection: require US country_code when present, then match ", FL" or known Florida keywords
+// Stricter Florida detection: require US country_code (must be present and 'US'/'USA'), then match ", FL" or known Florida keywords
 function isFloridaLaunch(l){
   if(!l?.pad) return false;
   const loc = l.pad.location || {};
   const country = (loc.country_code || '').toUpperCase();
-  // If country is present and not the United States, reject immediately (filters out non-US launches)
-  if(country && country !== 'US' && country !== 'USA') return false;
+  // Require country_code to be present and equal to US/USA. If missing or not US, reject immediately.
+  if(!(country === 'US' || country === 'USA')) return false;
 
   const padName = l.pad.name || '';
   const locName = loc.name || '';
