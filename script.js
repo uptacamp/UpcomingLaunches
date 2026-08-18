@@ -127,7 +127,7 @@ async function startAtomicCountdown(targetIso, displayEl){
     }
   }catch(e){
     // If the fetch fails, fall back to local clock (not ideal but still works)
-    try{ console.warn('worldtimeapi fetch failed, falling back to local time', e); }catch(_){}
+    try{ console.warn('worldtimeapi fetch failed, falling back to local time', e); }catch(_){}}
     serverNowMs = Date.now();
   }finally{
     perfStart = performance.now();
@@ -148,7 +148,9 @@ async function startAtomicCountdown(targetIso, displayEl){
     const days = Math.floor(totalHours / 24);
 
     // Format: D:HH:MM:SS with zero padding for HH/MM/SS, days as variable width
-    const daysStr = String(days);
+-    const daysStr = String(days);
++    // Always show days as at least two digits (so under 1 day shows "00"); keeps layout stable
++    const daysStr = String(days).padStart(2, '0');
     const hh = String(hours).padStart(2, '0');
     const mm = String(minutes).padStart(2, '0');
     const ss = String(seconds).padStart(2, '0');
