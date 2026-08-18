@@ -207,7 +207,7 @@ function renderSingle(next, totalFlorida){
 
   // New countdown row below the date/time — no labels per request
   const countdownEl = document.createElement('div');
-  countdownEl.className = 'watch-time countdown';
+  countdownEl.className = 'watch-time countdown'; 
   countdownEl.textContent = '...';
   // make it a separate row
   tWrap.appendChild(countdownEl);
