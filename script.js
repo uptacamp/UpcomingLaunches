@@ -14,14 +14,6 @@ function formatNet(net){
   }catch(e){return net}
 }
 
-function statusClass(statusName){
-  if(!statusName) return 'badge badge--yellow';
-  const s = statusName.toLowerCase();
-  if(s.includes('success') || s.includes('go')) return 'badge badge--green';
-  if(s.includes('hold') || s.includes('delay') || s.includes('scrub')) return 'badge badge--red';
-  return 'badge badge--yellow';
-}
-
 // Exact same keywords used for the Florida badge — used to decide visibility
 function isFloridaLaunch(l){
   if(!l?.pad) return false;
@@ -69,31 +61,24 @@ function isFloridaLaunch(l){
   return false;
 }
 
-// Render a single retro watch tile for the next Florida launch
+// Render a single retro watch tile for the next Florida launch — populate listEl directly
 function renderSingle(next, totalFlorida){
+  // ensure listEl acts as the tile container (avoid nesting another .watch-tile)
+  listEl.className = 'watch-tile';
   listEl.innerHTML = '';
+
   if(!next){
     listEl.innerHTML = '<div class="empty">No upcoming Florida launches found.</div>';
     return;
   }
 
   const l = next;
-  const tile = document.createElement('div');
-  tile.className = 'watch-tile';
-
-  // Florida badge
-  if(isFloridaLaunch(l)){
-    const badge = document.createElement('div');
-    badge.className = 'fl-badge';
-    badge.textContent = 'FLORIDA';
-    tile.appendChild(badge);
-  }
 
   // Main NET time
   const timeEl = document.createElement('h1');
   timeEl.className = 'watch-time';
   timeEl.textContent = (formatNet(l.net || l.window_start || l.window_end) || '').replace(/\s*\(local\)$/, '');
-  tile.appendChild(timeEl);
+  listEl.appendChild(timeEl);
 
   // Info row
   const infoRow = document.createElement('div');
@@ -123,9 +108,7 @@ function renderSingle(next, totalFlorida){
 
   infoRow.appendChild(left);
   infoRow.appendChild(right);
-  tile.appendChild(infoRow);
-
-  listEl.appendChild(tile);
+  listEl.appendChild(infoRow);
 }
 
 // Find the next Florida launch by scanning all launches in chronological order
