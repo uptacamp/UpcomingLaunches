@@ -79,6 +79,10 @@ body{display:flex;align-items:center;justify-content:center}
   -webkit-font-smoothing:antialiased;
 }
 
+#countdown {
+  font-size: clamp(32px, min(20vh, 16vw), 180px);
+}
+
 /* Info row pinned to the bottom of the tile so it never overlaps the large time */
 .watch-info{
   position:absolute;
