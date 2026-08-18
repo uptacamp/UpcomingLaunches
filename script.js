@@ -1,4 +1,4 @@
-// script.js — fetch upcoming launches and filter by country + ", FL" in pad/location
+// script.js — fetch upcoming launches and show only the next upcoming Florida launch
 const API = 'https://ll.thespacedevs.com/2.3.0/launches/upcoming/?limit=200&ordering=net';
 const listEl = document.getElementById('launchList');
 const statsEl = document.getElementById('stats');
@@ -28,7 +28,7 @@ function isFloridaLaunch(l){
   if(!l?.pad) return false;
   const loc = l.pad.location || {};
   const country = (loc.country_code || '').toUpperCase();
-  // If country is present and not the United States, reject immediately (filters out Chinese launches)
+  // If country is present and not the United States, reject immediately (filters out non-US launches)
   if(country && country !== 'US' && country !== 'USA') return false;
 
   const padName = l.pad.name || '';
@@ -52,84 +52,82 @@ function render(list){
   listEl.innerHTML = '';
   if(!list.length){
     emptyEl.hidden = false;
-    statsEl.textContent = '0 launches found';
+    statsEl.textContent = 'No upcoming Florida launches found.';
     return;
   }
   emptyEl.hidden = true;
-  debugEl.hidden = true;
 
-  const total = list.length;
-  const floridaCount = list.filter(isFloridaLaunch).length;
-  statsEl.textContent = `${total} upcoming launch${total>1?'es':''} — ${floridaCount} Florida`;
+  // If list contains the next upcoming item, show concise stats
+  const totalFlorida = list._totalFloridaCount || list.length; // allow passing total count via property
+  const next = list[0];
+  statsEl.textContent = `Next Florida launch — ${totalFlorida} upcoming Florida launch${totalFlorida>1?'es':''} total`;
 
-  for(const l of list){
-    const card = document.createElement('article');
-    card.className = 'card';
+  // Render a single card for the next launch
+  const l = next;
+  const card = document.createElement('article');
+  card.className = 'card';
 
-    const headerRow = document.createElement('div');
-    headerRow.className = 'row';
+  const headerRow = document.createElement('div');
+  headerRow.className = 'row';
 
-    const title = document.createElement('h3');
-    title.textContent = l.name || 'Unnamed';
-    headerRow.appendChild(title);
+  const title = document.createElement('h3');
+  title.textContent = l.name || 'Unnamed';
+  headerRow.appendChild(title);
 
-    const statusWrap = document.createElement('div');
-    statusWrap.style.marginLeft = 'auto';
-    const sName = l.status?.name || (l.status? String(l.status): 'Unknown');
-    const statusBadge = document.createElement('span');
-    statusBadge.className = statusClass(sName) + ' badge';
-    statusBadge.textContent = sName || 'Unknown';
-    statusWrap.appendChild(statusBadge);
-    headerRow.appendChild(statusWrap);
+  const statusWrap = document.createElement('div');
+  statusWrap.style.marginLeft = 'auto';
+  const sName = l.status?.name || (l.status? String(l.status): 'Unknown');
+  const statusBadge = document.createElement('span');
+  statusBadge.className = statusClass(sName) + ' badge';
+  statusBadge.textContent = sName || 'Unknown';
+  statusWrap.appendChild(statusBadge);
+  headerRow.appendChild(statusWrap);
 
-    card.appendChild(headerRow);
+  card.appendChild(headerRow);
 
-    const net = document.createElement('div');
-    net.className = 'meta';
-    net.innerHTML = `<strong>${formatNet(l.net || l.window_start || l.window_end)}</strong>`;
-    card.appendChild(net);
+  const net = document.createElement('div');
+  net.className = 'meta';
+  net.innerHTML = `<strong>${formatNet(l.net || l.window_start || l.window_end)}</strong>`;
+  card.appendChild(net);
 
-    const providerEl = document.createElement('div');
-    providerEl.className = 'field small';
-    providerEl.innerHTML = `<div class="label">Provider</div><div class="value">${l.launch_service_provider?.name || '—'}</div>`;
-    card.appendChild(providerEl);
+  const providerEl = document.createElement('div');
+  providerEl.className = 'field small';
+  providerEl.innerHTML = `<div class="label">Provider</div><div class="value">${l.launch_service_provider?.name || '—'}</div>`;
+  card.appendChild(providerEl);
 
-    const rocketEl = document.createElement('div');
-    rocketEl.className = 'field small';
-    const rocketName = l.rocket?.configuration?.name || l.rocket?.name || '—';
-    rocketEl.innerHTML = `<div class="label">Rocket</div><div class="value">${rocketName}</div>`;
-    card.appendChild(rocketEl);
+  const rocketEl = document.createElement('div');
+  rocketEl.className = 'field small';
+  const rocketName = l.rocket?.configuration?.name || l.rocket?.name || '—';
+  rocketEl.innerHTML = `<div class="label">Rocket</div><div class="value">${rocketName}</div>`;
+  card.appendChild(rocketEl);
 
-    const padName = l.pad?.name || l.pad?.location?.name || '—';
-    const padLoc = l.pad?.location?.name || l.pad?.location?.state || '';
-    const padEl = document.createElement('div');
-    padEl.className = 'field small';
-    padEl.innerHTML = `<div class="label">Pad</div><div class="value">${padName}${padLoc?` — ${padLoc}`:''}</div>`;
-    card.appendChild(padEl);
+  const padName = l.pad?.name || l.pad?.location?.name || '—';
+  const padLoc = l.pad?.location?.name || l.pad?.location?.state || '';
+  const padEl = document.createElement('div');
+  padEl.className = 'field small';
+  padEl.innerHTML = `<div class="label">Pad</div><div class="value">${padName}${padLoc?` — ${padLoc}`:''}</div>`;
+  card.appendChild(padEl);
 
-    if(isFloridaLaunch(l)){
-      const fl = document.createElement('div');
-      fl.style.marginTop = '8px';
-      const flBadge = document.createElement('span');
-      flBadge.className = 'badge badge--green';
-      flBadge.textContent = 'Florida';
-      fl.appendChild(flBadge);
-      card.appendChild(fl);
-    }
+  const fl = document.createElement('div');
+  fl.style.marginTop = '8px';
+  const flBadge = document.createElement('span');
+  flBadge.className = 'badge badge--green';
+  flBadge.textContent = 'Florida';
+  fl.appendChild(flBadge);
+  card.appendChild(fl);
 
-    if(l.url){
-      const a = document.createElement('a');
-      a.href = l.url;
-      a.textContent = 'Details';
-      a.target = '_blank';
-      a.className = 'small';
-      a.style.display = 'inline-block';
-      a.style.marginTop = '10px';
-      card.appendChild(a);
-    }
-
-    listEl.appendChild(card);
+  if(l.url){
+    const a = document.createElement('a');
+    a.href = l.url;
+    a.textContent = 'Details';
+    a.target = '_blank';
+    a.className = 'small';
+    a.style.display = 'inline-block';
+    a.style.marginTop = '10px';
+    card.appendChild(a);
   }
+
+  listEl.appendChild(card);
 }
 
 function matchesSearch(item, q){
@@ -141,10 +139,25 @@ function matchesSearch(item, q){
 }
 
 function updateView(){
-  const q = searchInput.value.trim();
-  const base = launchesAll;
-  const filtered = q ? base.filter(l => matchesSearch(l, q)) : base;
-  render(filtered);
+  // Only consider Florida launches; ignore search (we always show the next upcoming Florida launch)
+  const florida = launchesAll.filter(isFloridaLaunch);
+  if(!florida.length){
+    render([]);
+    return;
+  }
+
+  // Parse date and sort ascending by net/window_start/window_end
+  florida.sort((a,b)=>{
+    const ta = Date.parse(a.net || a.window_start || a.window_end || '') || Infinity;
+    const tb = Date.parse(b.net || b.window_start || b.window_end || '') || Infinity;
+    return ta - tb;
+  });
+
+  const next = florida[0];
+  // Pass total count via a property so render can show it
+  const listToRender = [next];
+  listToRender._totalFloridaCount = florida.length;
+  render(listToRender);
 }
 
 async function load(){
@@ -174,6 +187,7 @@ async function load(){
 }
 
 searchInput.addEventListener('input', ()=>{
+  // Keep search input but ignore it for the "next-only" behavior; we'll still refresh view to reflect any new data
   updateView();
 });
 
